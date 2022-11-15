@@ -1,4 +1,5 @@
 import numpy as np
+import matplotlib.pyplot as plt
 class Newton:
     def __init__(self,arr1):
         self.arr1 = arr1
@@ -126,7 +127,47 @@ class CubicSplineFree:
             + (self.arr1_y[j]-(M[j]*(h[j]**2))/6)*(self.arr1_x[j+1]-x)/h[j] \
             + (self.arr1_y[j+1]-M[j+1]*h[j]**2/6)*(x-self.arr1_x[j])/h[j]
         return S
+    def visualize(self,start,end,step,text):
+        x = np.linspace(start,end,step)
+        y = np.zeros(1)
+        for i in x:
+            y = np.append(y,self.num(i))
+        y = y[1:]
+        plt.figure()
+        plt.scatter(self.arr1_x, self.arr1_y, c='red')
+        if text is True:
+            for j in range(0,self.lenth):
+                plt.text(self.arr1_x[j],self.arr1_y[j],(self.arr1_x[j],self.arr1_y[j]))
+        plt.plot(x,y)
+        plt.show()
 
+class NewtonIter:
+    def __init__(self, F, x0,ess):
+        self.F = F
+        self.x0 = x0
+        self.ess = ess
+
+    def Iter(self):
+        delt = 1
+        x = self.x0
+        x0 = x
+        count = 0
+        MaxIter = 10000
+        fx = 0
+        h = 0.00001
+        while delt >= self.ess :
+            fx = (self.F(x)-self.F(x-h))/h
+            x = x - self.F(x)/fx
+            if abs(x)<1:
+                delt = abs(x0-x)
+            else:
+                delt = abs((x0-x)/x)
+            x0 = x
+            count += 1
+            if count >= MaxIter:
+                x = "超过最大迭代上限10000"
+                break
+        return x
 
 def Narrow(x):
     arrC = np.array([[0.01,0.618],[0.1,0.632],[0.2,0.644],[0.3,0.659]
@@ -166,3 +207,104 @@ def support(x):
     num = CubicSplineFree(arr)
     return num.num(x)
 
+class CReq:
+    def __init__(self, P_m_a,D_P_a):
+        self. P_m_a =  P_m_a
+        self.D_P_a = D_P_a
+
+    def num(self, x):
+        CRa = np.array([3, 4, 5])
+        arrPm = np.c_[CRa, self.P_m_a]
+        arrDPa = np.c_[CRa, self.D_P_a]
+        Pmc = CubicSplineFree(arrPm)
+        DPc = CubicSplineFree(arrDPa)
+        return Pmc.num(x),DPc.num(x)
+
+    def F(self,x):
+        return  self.num(x)[0]-self.num(x)[1]
+
+
+    def CRx(self):
+        A = NewtonIter(self.F,4,0.001)
+        return A.Iter()
+
+    def visualize(self):
+        CRa = np.array([3, 4, 5])
+        x = np.linspace(3, 5, 100)
+        y1 = np.zeros(1)
+        y2 = np.zeros(1)
+        for i in x:
+            y1 = np.append(y1, self.num(i)[0])
+            y2 = np.append(y2, self.num(i)[1])
+        y1 = y1[1:]
+        y2 = y2[1:]
+        plt.figure()
+        plt.scatter(CRa, self.P_m_a, c='red')
+        plt.scatter(CRa, self.D_P_a, c='red')
+        plt.scatter(self.CRx(),self.num(self.CRx())[0],c='red')
+        for j in range(0, 3):
+            plt.text(CRa[j], self.P_m_a[j], (CRa[j], self.P_m_a[j]))
+            plt.text(CRa[j], self.D_P_a[j], (CRa[j], self.D_P_a[j]))
+        plt.text(self.CRx()-1, self.num(self.CRx())[0]-3000, (self.CRx(), self.num(self.CRx())[0]))
+        plt.plot(x, y1)
+        plt.plot(x, y2)
+        plt.show()
+
+def flowstate(Rel,Reg):
+    a = 't' if Rel>1000 else 'l'
+    b = 't' if Reg > 1000 else 'l'
+    return a+b
+
+def Chisholm(X,StateState):
+    if StateState == 'tt':   C = 20
+    elif StateState == 'lt': C = 15
+    elif StateState == 'tl': C = 10
+    elif StateState == 'll': C = 5
+    Phi_l = 1+C/X+1/(X**2)
+    Phi_g = 1+C*X+X**2
+    return Phi_l,Phi_g
+
+'''
+P_m_a = [37946.51442117,36169.4825427 ,34554.50600197]
+D_P_a = [22442.07229695,28904.82270411,35807.92387703]
+A = CReq(P_m_a,D_P_a)
+print(A.CRx())
+A.visualize()
+'''
+
+'''
+CRa = np.array([3,4,5])
+arrPm = np.c_[CRa,P_m_a]
+arrDPa = np.c_[CRa,D_P_a]
+Pmc = CubicSplineFree(arrPm)
+DPc = CubicSplineFree(arrDPa)
+
+CRx = 0
+for i in np.linspace(3,5,100000):
+    ess = abs(Pmc.num(i)-DPc.num(i))
+    if ess<0.01:
+        CRx = i
+        break
+print(CRx)
+
+x = np.linspace(3,5,100)
+y1 = np.zeros(1)
+y2 = np.zeros(1)
+for i in x:
+    y1 = np.append(y1,Pmc.num(i))
+    y2 = np.append(y2, DPc.num(i))
+y1 = y1[1:]
+y2 = y2[1:]
+plt.figure()
+plt.scatter(CRa, P_m_a, c='red')
+plt.scatter(CRa, D_P_a, c='red')
+for j in range(0,3):
+    plt.text(CRa[j],P_m_a[j],(CRa[j],P_m_a[j]))
+    plt.text(CRa[j], D_P_a[j], (CRa[j], D_P_a[j]))
+plt.plot(x,y1)
+plt.plot(x,y2)
+plt.show()
+
+
+print(arrPm)
+'''

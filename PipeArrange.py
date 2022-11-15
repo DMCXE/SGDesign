@@ -16,7 +16,7 @@ class Pip_arrangement:
         #计算结果
         self.PipeNum = 0
         self.Pippos = 0
-        self.R = 0
+        self.R   = 0
         self.R_part = 0
         self.R_max = 0
         self.R_min = 0

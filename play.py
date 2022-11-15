@@ -1,5 +1,7 @@
 import numpy as np
-def flowstate(Rel,Reg):
-    print(123)
 
-flowstate(1,2)
+a = np.array([1,3,6])
+b = np.array([2,9,8])
+d = np.array([[1,3],[4,6]])
+c = np.c_[a,b]
+print(d)
